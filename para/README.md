@@ -1,7 +1,7 @@
 # Para
 
 Para is a MIDI-driven 3-voice Paraphonic synthesizer with a mixed square/saw/triangle and sine waves.
-Para is meant to run on the AE Modular GRAINS, but it could be adapted to any Arduino.
+Para is meant to run on an Arduino Nano on the BrAEDboard or an AE Modular GRAINS with the Atmega 328p's serial input broken out to a patch input, but it could be adapted to any Arduino.
 
 Para can select between square and sine, saw and sine, or triangle and sine.  You select
 which one you want in the code.  The default is saw and sine.
@@ -49,6 +49,7 @@ However you can change this behavior by uncommenting a #define in the code.
 - CC
     - All Notes Off (CC 123) Resets all notes, lowers Gate
     - All Sounds Off (CC 120) Resets all notes, lowers Gate
+    - Voice switch (CC 66) Switches between Sine for value of 0..63, Saw/Square/Tri for value of 64..127
 
 
 
@@ -59,13 +60,13 @@ Saw/Square/Tri Vs Sine CV
 #### IN 2
 [Unused]
 #### IN 3
-Gate Out
+[Unused]
 #### AUDIO IN (A)
 [Unused]
 #### AUDIO OUT
 Out
 #### DIGITAL OUT (D) 
-MIDI In
+Gate Out
 #### POT 1
 Saw/Square/Tri Vs Sine
 #### POT 2

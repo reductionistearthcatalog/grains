@@ -312,13 +312,11 @@ PROGMEM const float frequencies[128] =
 
 #include <tables/sin512_int8.h>
 
-//#include "NeoSWSerial.h"   // you have to install this via the library manager, deactivated because using hardware serial
 #include "parsemidi.c"
 
 #define MIDI_RATE 31250
 #define BLANK_SERIAL	  5		// Blank Serial Pin
 #define PIN_UNUSED 255
-//NeoSWSerial softSerial(CV_GATE_OUT, BLANK_SERIAL, PIN_UNUSED); // deactivated because using hardware serial
 midiParser parse;
 
 /// OSCILLATORS
@@ -588,7 +586,6 @@ void setup()
     startMozzi();
     //Serial.begin(115200);
 
-	//pinMode(CV_IN3, OUTPUT); // deactivated because using grains digital output pin for gate output
   pinMode(CV_GATE_OUT, OUTPUT);
 
 	/// Setup MIDI
@@ -597,7 +594,6 @@ void setup()
 #else
 	initializeParser(&parse, CHANNEL, 0, 1);
 #endif
-	// softSerial.begin(MIDI_RATE); deactivating because using hardware serial
   Serial.begin(MIDI_RATE);
     }
 
@@ -626,7 +622,6 @@ void cc(midiParser* parser, unsigned char parameter, unsigned char value)
 			}
 		
 		// everyone is off, lower gate
-		//digitalWrite(CV_IN3, 0); // deactivated because using grains digital output pin for gate output
     digitalWrite(CV_GATE_OUT, 0);
 		gate = 0;
 		}
@@ -655,7 +650,6 @@ void noteOn(midiParser* parser, unsigned char note, unsigned char velocity)
 
 	if (!gate)
 		{
-		//digitalWrite(CV_IN3, 1); // deactivated because using grains digital output pin for gate output
     digitalWrite(CV_GATE_OUT, 1);
 		gate = 1;
 		}
@@ -715,7 +709,6 @@ void noteOff(midiParser* parser, unsigned char note, unsigned char velocity)
 		}
 	
 	// everyone is off, lower gate
-	//digitalWrite(CV_IN3, 0); // deactivated because using grains digital output pin for gate output
   digitalWrite(CV_GATE_OUT, 0);
 	gate = 0;
 	}
@@ -733,7 +726,6 @@ void cc(midiParser* parser, unsigned char parameter, unsigned char value)
 			}
 		
 		// everyone is off, lower gate
-		//digitalWrite(CV_IN3, 0); // deactivated because using grains digital output pin for gate output
     digitalWrite(CV_GATE_OUT, 0);
 		gate = 0;
 		}
@@ -758,7 +750,6 @@ void noteOn(midiParser* parser, unsigned char note, unsigned char velocity)
 
 	if (!gate)
 		{
-		//digitalWrite(CV_IN3, 1); // deactivated because using grains digital output pin for gate output
     digitalWrite(CV_GATE_OUT, 1);
 		gate = 1;
 		}
@@ -853,23 +844,17 @@ void noteOff(midiParser* parser, unsigned char note, unsigned char velocity)
 		}
 	
 	// everyone is off, lower gate
-	//digitalWrite(CV_IN3, 0); // deactivated because using grains digital output pin for gate output
   digitalWrite(CV_GATE_OUT, 0);
 	gate = 0;
 	}
 
 #endif
 
-//uint8_t alpha; // deactivated because defined this earlier to use MIDI CC instead of CV
 void updateControl() 
-    {
-    // alpha = mozziAnalogRead(CV_POT_IN1) >> 2; // deactivated because doing this with cc 66
-        
-    //uint8_t val = softSerial.available(); // deactivated because using hardware serial
+    {        
     uint8_t val = Serial.available();
 	for(uint8_t i = 0; i < val; i++)
 		{
-		//parseMidi(&parse, softSerial.read()); // deactivated because using hardware serial
     parseMidi(&parse, Serial.read());
 		}
     }
