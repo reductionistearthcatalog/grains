@@ -34,6 +34,9 @@ BEEP can play up to **nine notes** at once.
 - CC
     - All Notes Off (CC 123) Resets all notes
     - All Sounds Off (CC 120) Resets all notes
+    - Hold (CC 66) Sets hold value
+    - Decay (CC 67) Sets decay value
+    - Insensitivity (CC 69) Sets velocity sensitivity. 0...64 is velocity sensitive, 65...127 is velocity insensitive
 
 ## Configuration
 
@@ -42,13 +45,13 @@ Decay CV
 #### IN 2
 Hold CV
 #### IN 3
-Gate Out
+[Unused]
 #### AUDIO IN (A)
 [Unused]
 #### AUDIO OUT
 Out
 #### DIGITAL OUT (D) 
-MIDI In
+Gate Out
 #### POT 1
 Decay
 #### POT 2

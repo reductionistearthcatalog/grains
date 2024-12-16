@@ -46,16 +46,19 @@
 ///					
 /// CC				All Notes Off		CC 123		[Resets all notes, lowers Gate]
 ///					All Sounds Off		CC 120		[Resets all notes, lowers Gate]
+///         Hold              CC 66     [Sets hold value]
+///         Decay             CC 67     [Sets decay value]
+///         Insensitive       CC 69     [0...64 is velocity sensitive, 65...127 is velocity insensitive]
 
 
 /// CONFIGURATION
 ///
 /// IN 1            Decay CV
 /// IN 2            Hold CV
-/// IN 3            Gate Out
+/// IN 3            [Unused]
 /// AUDIO IN (A)    [Unused]
 /// AUDIO OUT       Out
-/// DIGITAL OUT (D)	MIDI In
+/// DIGITAL OUT (D)	Gate Out
 ///
 /// POT 1           Decay
 ///
@@ -69,10 +72,10 @@
 #define CV_POT_IN1    A2    // Decay
 #define CV_POT_IN2    A1    // Hold
 #define CV_POT3       A0    // Volume
-#define CV_IN3        A3    // Gate Out
+#define CV_IN3        A3    // [Unused]
 #define CV_AUDIO_IN   A4    // [Unused]
 #define CV_AUDIO_OUT  9     // Out
-#define CV_GATE_OUT   8     // MIDI In
+#define CV_GATE_OUT   8     // Gate out
 
 
 
@@ -716,7 +719,7 @@ const uint16_t HOLD_LENGTHS[12] = { HOLD_INDEFINITE, 512, 256, 128, 64, 34, 16, 
 #include <Oscil.h>
 #include <tables/sin256_int8.h>
 #include <tables/sin2048_int8.h>
-#include "NeoSWSerial.h"   // you have to install this via the library manager
+//#include "NeoSWSerial.h"   // you have to install this via the library manager, deactivated because using hardware serial
 #include "parsemidi.c"
 
 /// OSCILLATORS
@@ -762,6 +765,10 @@ uint8_t decay = 0;
 uint8_t hold = 0;
 // Are we velocity insensitive?
 uint8_t insensitive = 0;
+// these are for storing decay, hold, and insensitive cc values
+uint8_t decaycc = 0;
+uint8_t holdcc = 0;
+uint8_t insensitivecc = 0;
 
 // The next voice to assign when a note comes in
 uint8_t voice = 0;
@@ -780,7 +787,8 @@ void reset()
 		}
 	numVoicesOn = 0;
 	voice = 0;
-	digitalWrite(CV_IN3, 0);
+	//digitalWrite(CV_IN3, 0); // deactivated because using gate out
+  digitalWrite(CV_GATE_OUT, 0);
 	}
 	
 
@@ -788,9 +796,10 @@ void reset()
 
 
 #define MIDI_RATE 31250
-#define BLANK_SERIAL	  5		// Blank Serial Pin
-#define PIN_UNUSED 255
-NeoSWSerial softSerial(CV_GATE_OUT, CV_AUDIO_IN, PIN_UNUSED);
+//#define BLANK_SERIAL	  5		// Blank Serial Pin
+//#define PIN_UNUSED 255
+//NeoSWSerial softSerial(CV_GATE_OUT, CV_AUDIO_IN, PIN_UNUSED); // deactivated because using hardware serial
+
 midiParser parse;
 
 void noteOn(midiParser* parser, unsigned char note, unsigned char velocity)
@@ -811,7 +820,8 @@ if (insensitive) velocity = 127;
 	voice++;
 	if (voice >= VOICES) voice = 0;
 	if (numVoicesOn < VOICES) numVoicesOn++;
-	digitalWrite(CV_IN3, 1);
+	//digitalWrite(CV_IN3, 1); // deactivated because using gate out
+  digitalWrite(CV_GATE_OUT, 1);
 	}
 
 void noteOff(midiParser* parser, unsigned char note, unsigned char velocity)
@@ -827,7 +837,8 @@ void noteOff(midiParser* parser, unsigned char note, unsigned char velocity)
 				if (numVoicesOn > 0) 
 					{
 					numVoicesOn--;
-					digitalWrite(CV_IN3, 0);
+					//digitalWrite(CV_IN3, 0); // deactivated because using gate out
+          digitalWrite(CV_GATE_OUT, 0);
 					}
 				return;
 				}
@@ -841,14 +852,28 @@ void cc(midiParser* parser, unsigned char parameter, unsigned char value)
 		{
 		reset();
 		}
+  if (parameter == 66) // set holdcc
+    {
+      holdcc = value;
+    }
+  if (parameter == 67) // set decaycc
+    {
+      decaycc = value;
+    }
+  if (parameter == 69) // set insensitivecc
+    {
+      insensitivecc = value;
+    }
 	}
 	
 void setup()
     {
     startMozzi();
 	initializeParser(&parse, CHANNEL, 0, 1);
-	softSerial.begin(MIDI_RATE);
-	pinMode(CV_IN3, OUTPUT);
+	//softSerial.begin(MIDI_RATE); // deactivating because using hardware serial
+  Serial.begin(MIDI_RATE);
+	//pinMode(CV_IN3, OUTPUT); // deactivating because using gate output instead
+  pinMode(CV_GATE_OUT, OUTPUT);
 	reset();
     }
 
@@ -870,20 +895,26 @@ inline uint8_t getGain(uint8_t idx)
 void updateControl()                          
     {
 	// Get MIDI    
-    uint8_t val = softSerial.available();
+    //uint8_t val = softSerial.available(); // deactivating because using hardware serial
+    uint8_t val = Serial.available();
 	for(uint8_t i = 0; i < val; i++)
 		{
-		parseMidi(&parse, softSerial.read());
+		//parseMidi(&parse, softSerial.read()); // deactivating because using hardware serial
+    parseMidi(&parse, Serial.read());
 		}
 
 	// Only do this stuff once every few cycles
 	if (counter == 0)
 		{
-    	decay = (mozziAnalogRead(CV_POT_IN1) * 12) >> 10;		// 0...11
-    	hold  =(mozziAnalogRead(CV_POT_IN2) * 12) >> 10;		// 0...11
-    	uint16_t v = mozziAnalogRead(CV_POT3);
-    	insensitive = (v >= 512);
-    	volume = ((v & 511) >> 1);								// 0...255
+    	//decay = (mozziAnalogRead(CV_POT_IN1) * 12) >> 10;		// 0...11 // deactivating because using cc for decay
+      decay = (decaycc * 12) >> 7; // 0...11
+    	//hold  =(mozziAnalogRead(CV_POT_IN2) * 12) >> 10;		// 0...11 // deactivating because using cc for hold
+      hold  =(holdcc * 12) >> 7; // 0...11
+    	//uint16_t v = mozziAnalogRead(CV_POT3); // deactivating because using insensitivecc for velocity insensitivity
+    	//insensitive = (v >= 512); // deactivating because using insensitivecc for velocity insensitivity
+      insensitive = (insensitivecc >= 64);
+    	//volume = ((v & 511) >> 1);								// 0...255 // deactivated because using insensitive cc
+      volume = ((insensitivecc & 63) << 2);       // 0...255
     	}
 	counter++;
 	if (counter >= COUNTER_MAX) counter = 0;
